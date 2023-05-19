@@ -7,10 +7,12 @@ import org.json.simple.parser.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import zerobase.weather.WeatherApplication;
 import zerobase.weather.domain.DateWeather;
 import zerobase.weather.domain.Diary;
@@ -104,7 +106,15 @@ public class DiaryService {
 
     @Transactional
     public void deleteDiary(LocalDate date) {
-        diaryRepository.deleteAllByDate(date);
+        List<Diary> diaries = diaryRepository.findAllByDate(date);
+        if (diaries.isEmpty()) {
+            throw new Nonexistent();
+        }
+        try {
+            diaryRepository.deleteAllByDate(date);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to delete diary");
+        }
     }
 
     private DateWeather getWeatherFromApi(LocalDate date) {

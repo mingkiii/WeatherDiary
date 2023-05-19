@@ -23,7 +23,7 @@ public class SwaggerConfig {
     }
 
     private ApiInfo apiInfo() {
-        String description = "날씨 일를 CRUD 할 수 있는 백엔드 API 입니다.";
+        String description = "날씨 일기를 CRUD 할 수 있는 백엔드 API 입니다.";
         return new ApiInfoBuilder()
                 .title("날씨 일기 프로젝트")
                 .description(description)

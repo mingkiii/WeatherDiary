@@ -4,14 +4,17 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.web.server.ResponseStatusException;
 import zerobase.weather.domain.DateWeather;
 import zerobase.weather.domain.Diary;
 import zerobase.weather.error.InvalidDate;
+import zerobase.weather.error.Nonexistent;
 import zerobase.weather.repository.DateWeatherRepository;
 import zerobase.weather.repository.DiaryRepository;
 
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -122,10 +125,26 @@ class DiaryServiceTest {
     public void deleteDiaryTest() {
         //given
         LocalDate date = LocalDate.of(2023, 1, 1);
+        Diary diary = new Diary();
+        diary.setDate(date);
         //when
+        when(diaryRepository.findAllByDate(date)).thenReturn(Collections.singletonList(diary));
         diaryService.deleteDiary(date);
         //then
         verify(diaryRepository, times(1)).deleteAllByDate(date);
     }
+    @Test
+    public void deleteDiary_NonexistentDiaryTest() {
+        // given
+        LocalDate date = LocalDate.of(2023, 1, 1);
 
+        // Mock repository behavior
+        when(diaryRepository.findAllByDate(date)).thenReturn(Collections.emptyList());
+
+        // then
+        assertThrows(Nonexistent.class, () -> {
+            // when
+            diaryService.deleteDiary(date);
+        });
+    }
 }

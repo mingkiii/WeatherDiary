@@ -23,7 +23,7 @@ public class DiaryController {
     void createDiary(
             @RequestParam(required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-            @ApiParam(value = "일기 생성 날짜", example = "2020-02-02")
+            @ApiParam(value = "일기 생성 날짜, 날짜 지정 없을 시 현재 날짜로 생성", example = "2020-02-02")
             LocalDate date,
             @RequestBody String text
     ) {
