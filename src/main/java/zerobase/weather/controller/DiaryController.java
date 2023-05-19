@@ -18,14 +18,18 @@ public class DiaryController {
         this.diaryService = diaryService;
     }
 
-    @ApiOperation(value = "일기 텍스트와 날씨를 이용해서 DB에 일기 저장.")
+    @ApiOperation(value = "지정된 날짜로 다이어리를 생성합니다.")
     @PostMapping("/create/diary")
     void createDiary(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
             @ApiParam(value = "일기 생성 날짜", example = "2020-02-02")
             LocalDate date,
             @RequestBody String text
     ) {
+        if (date == null) {
+            date = LocalDate.now(); // 현재 날짜로 설정
+        }
         diaryService.createDiary(date, text);
     }
 

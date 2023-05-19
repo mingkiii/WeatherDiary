@@ -15,6 +15,7 @@ import zerobase.weather.WeatherApplication;
 import zerobase.weather.domain.DateWeather;
 import zerobase.weather.domain.Diary;
 import zerobase.weather.error.InvalidDate;
+import zerobase.weather.error.Nonexistent;
 import zerobase.weather.repository.DateWeatherRepository;
 import zerobase.weather.repository.DiaryRepository;
 
@@ -45,8 +46,9 @@ public class DiaryService {
 
     @Transactional
     @Scheduled(cron = "0 0 1 * * *") //매일 새벽 1시마다 동작
-    public void saveWeatherDate(){
-        dateWeatherRepository.save(getWeatherFromApi());
+    public void saveWeatherDate() {
+        LocalDate date = LocalDate.now();
+        dateWeatherRepository.save(getWeatherFromApi(date));
         logger.info("01시에 날씨 데이터 가져오기 완료");
     }
 
@@ -58,6 +60,7 @@ public class DiaryService {
 
         //파싱된 데이터 + 일기 값을 db에 넣기
         Diary nowDiary = new Diary();
+
         nowDiary.setDateWeather(dateWeather);
         nowDiary.setText(text);
 
@@ -67,8 +70,8 @@ public class DiaryService {
 
     private DateWeather getDateWeather(LocalDate date) {
         List<DateWeather> dateWeatherListFromDB = dateWeatherRepository.findAllByDate(date);
-        if(dateWeatherListFromDB.size() == 0){
-            return getWeatherFromApi();
+        if (dateWeatherListFromDB.size() == 0) {
+            return getWeatherFromApi(date);
         } else {
             return dateWeatherListFromDB.get(0);
         }
@@ -82,35 +85,43 @@ public class DiaryService {
         return diaryRepository.findAllByDate(date);
     }
 
+    @Transactional(readOnly = true)
     public List<Diary> readDiaries(LocalDate startDate, LocalDate endDate) {
         return diaryRepository.findAllByDateBetween(startDate, endDate);
     }
 
-    public void updateDiary(LocalDate date, String text) {
+    @Transactional
+    public Diary updateDiary(LocalDate date, String text) {
         Diary nowDiary = diaryRepository.getFirstByDate(date);
+        if (nowDiary == null) {
+            throw new Nonexistent();
+        }
         nowDiary.setText(text);
-        diaryRepository.save(nowDiary);
+        Diary updatedDiary = diaryRepository.save(nowDiary);
+        logger.info("Updated diary text: {}", updatedDiary.getText());
+        return updatedDiary;
     }
 
+    @Transactional
     public void deleteDiary(LocalDate date) {
         diaryRepository.deleteAllByDate(date);
     }
 
-    private DateWeather getWeatherFromApi(){
+    private DateWeather getWeatherFromApi(LocalDate date) {
         // open weather map에서 날씨 데이터 가져오기
         String weatherData = getWeatherString();
 
         // 받아온 날씨 json파싱하기
         Map<String, Object> parsedWeather = parseWeather(weatherData);
         DateWeather dateWeather = new DateWeather();
-        dateWeather.setDate(LocalDate.now());
+
+        dateWeather.setDate(date);
         dateWeather.setWeather(parsedWeather.get("main").toString());
         dateWeather.setIcon(parsedWeather.get("icon").toString());
         dateWeather.setTemperature((double) parsedWeather.get("temp"));
 
         return dateWeather;
     }
-
 
 
     private String getWeatherString() {
@@ -160,6 +171,4 @@ public class DiaryService {
 
         return resultMap;
     }
-
-
 }
